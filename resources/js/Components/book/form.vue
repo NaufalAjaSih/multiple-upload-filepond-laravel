@@ -61,12 +61,31 @@
                                     for="formBookImage"
                                     class="block text-gray-700 text-sm font-bold mb-2"
                                 >Image:</label>
-                                <input
-                                    type="text"
-                                    class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                                    id="formBookImage"
-                                    placeholder="Enter Image"
+                                <file-pond
+                                    name="imageFilepond"
+                                    ref="pond"
+                                    v-bind:allow-multiple="false"
+                                    accepted-file-types="image/png, image/jpeg"
+                                    v-bind:server="{
+                                        url: '',
+                                        timeout: 7000,
+                                        process: {
+                                            url: '/upload-books',
+                                            method: 'POST',
+                                            headers: {
+                                                'X-CSRF-TOKEN': $page.props.csrf_token
+                                            },
+                                            withCredentials: false,
+                                            onload: handleFilePondLoad,
+                                            onerror: () => { }
+                                        },
+                                        remove: handleFilePondRemove,
+                                        revert: handleFilePondRevert
+                                    }"
+                                    v-bind:files="myFiles"
+                                    v-on:init="handleFilePondInit"
                                 >
+                                </file-pond>
                             </div>
                         </div>
                     </div>
@@ -87,30 +106,99 @@
                                 type="button"
                                 v-show="isEdit"
                                 @click="$emit('formsave', form)"
-                            class="inline-flex justify-center w-full rounded-md border border-transparent px-4 py-2 bg-green-600 text-base leading-6 font-medium text-white shadow-sm hover:bg-green-500 focus:outline-none focus:border-green-700 focus:shadow-outline-green transition ease-in-out duration-150 sm:text-sm sm:leading-5"
-                        >
-                            Update
-                        </button>
-                    </span>
-                    <span class="mt-3 flex w-full rounded-md shadow-sm sm:mt-0 sm:w-auto">
-                        <button
-                            type="button"
-                            @click="$emit('formclose')"
-                            class="inline-flex justify-center w-full rounded-md border border-gray-300 px-4 py-2 bg-white text-base leading-6 font-medium text-gray-700 shadow-sm hover:text-gray-500 focus:outline-none focus:border-blue-300 focus:shadow-outline-blue transition ease-in-out duration-150 sm:text-sm sm:leading-5"
-                        >
-                            Cancel
-                        </button>
-                    </span>
-                </div>
-            </form>
+                                class="inline-flex justify-center w-full rounded-md border border-transparent px-4 py-2 bg-green-600 text-base leading-6 font-medium text-white shadow-sm hover:bg-green-500 focus:outline-none focus:border-green-700 focus:shadow-outline-green transition ease-in-out duration-150 sm:text-sm sm:leading-5"
+                            >
+                                Update
+                            </button>
+                        </span>
+                        <span class="mt-3 flex w-full rounded-md shadow-sm sm:mt-0 sm:w-auto">
+                            <button
+                                type="button"
+                                @click="$emit('formclose')"
+                                class="inline-flex justify-center w-full rounded-md border border-gray-300 px-4 py-2 bg-white text-base leading-6 font-medium text-gray-700 shadow-sm hover:text-gray-500 focus:outline-none focus:border-blue-300 focus:shadow-outline-blue transition ease-in-out duration-150 sm:text-sm sm:leading-5"
+                            >
+                                Cancel
+                            </button>
+                        </span>
+                    </div>
+                </form>
 
+            </div>
         </div>
     </div>
-</div></template>
+</template>
 
 <script>
+
+import axios from "axios";
+import vueFilePond from "vue-filepond";
+import "filepond/dist/filepond.min.css";
+
+// Import FilePond plugins
+// Please note that you need to install these plugins separately
+
+// Import image preview plugin styles
+import "filepond-plugin-image-preview/dist/filepond-plugin-image-preview.min.css";
+
+// Import the plugin code
+import FilePondPluginFilePoster from 'filepond-plugin-file-poster';
+
+// Import the plugin styles
+import 'filepond-plugin-file-poster/dist/filepond-plugin-file-poster.css';
+
+// Import image preview and file type validation plugins
+import FilePondPluginFileValidateType from "filepond-plugin-file-validate-type";
+import FilePondPluginImagePreview from "filepond-plugin-image-preview";
+
+const FilePond = vueFilePond(
+    FilePondPluginFileValidateType,
+    FilePondPluginImagePreview,
+    FilePondPluginFilePoster
+);
+
 export default {
-    props: ['form', 'isOpen', 'isEdit']
+    props: ['form', 'isOpen', 'isEdit'],
+    components: {
+        FilePond
+    },
+    data() {
+        return {
+            myFiles: []
+        }
+    },
+    methods: {
+        handleFilePondInit() {
+            if (this.form.image) {
+                this.myFiles = [{
+
+                    source: '/' + this.form.image,
+
+                    options: {
+                        type: 'local',
+                        metadata: {
+                            poster: '/' + this.form.image
+                        }
+                    }
+
+                }];
+            } else {
+                this.myFiles = [];
+            }
+        },
+        handleFilePondLoad(response) {
+            this.form.image = response;
+        },
+        handleFilePondRemove(source, load, error) {
+            this.form.image = '';
+            load();
+        },
+        handleFilePondRevert(uniqueId, load, error) {
+            axios.post('/upload-books-revert', {
+                image: this.form.image
+            });
+            load();
+        }
+    }
 }
 
 

@@ -42,7 +42,12 @@
                                 <td class="px-4 py-2 border">{{ item.id }}</td>
                                 <td class="px-4 py-2 border">{{ item.title }}</td>
                                 <td class="px-4 py-2 border">{{ item.author }}</td>
-                                <td class="px-4 py-2 border"><!-- image --></td>
+                                <td class="px-4 py-2 border">
+                                    <img
+                                        v-if="item.image"
+                                        :src="image_path(item.image)"
+                                    />
+                                </td>
                                 <td class="border px-4 py-2">
                                     <button
                                         @click="openForm(item)"
@@ -95,6 +100,9 @@ export default {
         }
     },
     methods: {
+        image_path(image) {
+            return '/' + image;
+        },
         saveItem(item) {
             let url = '/books';
             if (item.id) {
@@ -116,7 +124,7 @@ export default {
         openForm(item) {
             this.isFormOpen = true;
             this.isFormEdit = !!item;
-            this.formObject = item ? item : defaultFormObject;
+            this.formObject = item ? Object.assign({}, item) : defaultFormObject;
             this.$page.props.errors = {};
         },
         deleteItem(item) {

@@ -35,4 +35,7 @@ Route::middleware([
     })->name('dashboard');
 
     Route::resource('books', BookController::class)->names(['index' => 'books']);
+
+    Route::post('/upload-books', [BookController::class, 'upload']);
+    Route::post('/upload-books-revert', [BookController::class, 'uploadRevert']);
 });
